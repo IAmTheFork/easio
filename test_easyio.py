@@ -33,7 +33,7 @@ testInputListeners(test_i2c)
 
 
 
-# Create a lambda for getting surrent time
+# Create a lambda for getting current time
 current_time_ms = lambda: int(round(time.time() * 1000))
 
 
