@@ -2,6 +2,13 @@ import smbus
 import threading
 import time
 
+    
+def setBit(bit, value):
+    return value | (1<<bit)
+
+def clearBit(bit, value):
+    return value & ~(1<<bit)
+
 class i2c:
     #TODO: Bank B - everything is Bank A only at the moment
     # Command for setting IO direction on bank A
@@ -25,26 +32,22 @@ class i2c:
         self.bus.write_byte_data(self.i2cAddress, i2c.IODIRA, self.bankADir)
         # Startup input read thread
         t = threading.Thread(target=i2c.doInputCheckLoop, args=(self,))
+        t.setDaemon(True)
         t.start()
-    
-    def setBit(bit, value):
-        return value | (1<<bit)
 
-    def clearBit(bit, value):
-        return value & ~(1<<bit)
 
     def setPinMode(self, pin, mode):
         if(mode):
-            self.bankADir = i2c.setBit(pin, self.bankADir)
+            self.bankADir = setBit(pin, self.bankADir)
         else:
-            self.bankADir = i2c.clearBit(pin, self.bankADir)
+            self.bankADir = clearBit(pin, self.bankADir)
         self.bus.write_byte_data(self.i2cAddress, i2c.IODIRA, self.bankADir)
 
     def setPinValue(self, pin, mode):
         if(mode):
-            self.bankAValues = i2c.setBit(pin, self.bankAValues)
+            self.bankAValues = setBit(pin, self.bankAValues)
         else:
-            self.bankAValues = i2c.clearBit(pin, self.bankAValues)
+            self.bankAValues = clearBit(pin, self.bankAValues)
         i2c.setAllPins(self, self.bankAValues)
 
     def setAllPins(self, bankValues):
