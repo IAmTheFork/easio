@@ -1,6 +1,7 @@
 import smbus
 import threading
 import time
+import copy
 
     
 def setBit(bit, value):
@@ -33,13 +34,23 @@ class i2c:
         self.bankOutputValues = [0b00000000, 0b00000000]
         self.inputChangeListeners = [[[] for _ in range(8)] for _ in range(2)]
         self.lastInputValues = [[0 for _ in range(8)]for _ in range(2)]
+        self.newInputValues = [[0 for _ in range(8)]for _ in range(2)]
+        self.inputsChanged = False
         # By default, set all pins on bank A and B to output
         self.bus.write_byte_data(self.i2cAddress, i2c.IODIRA, self.bankDir[0])
         self.bus.write_byte_data(self.i2cAddress, i2c.IODIRB, self.bankDir[1])
+        # Create callback thread condition
+        self.cond = threading.Condition(threading.Lock())
+        
         # Startup input read thread
         t = threading.Thread(target=i2c.doInputCheckLoop, args=(self,))
         t.setDaemon(True)
         t.start()
+
+        # Startup event dispatch thread
+        edt = threading.Thread(target=i2c.doNotifyListeners, args=(self,))
+        edt.setDaemon(True)
+        edt.start()
 
 
     def setPinMode(self, bank, pin, mode):
@@ -84,13 +95,33 @@ class i2c:
 
     def doInputCheckLoop(self):
         while True:
+            self.cond.acquire()
             for bank in range (0, 2):
                 allPinValues = i2c.readAllPins(self, bank)
                 for pin in range(0, 8):
-                    newValue = allPinValues & (1<<pin)
-                    oldValue = self.lastInputValues[bank][pin]
-                    if newValue != oldValue:
-                        self.lastInputValues[bank][pin] = newValue
-                        for listener in self.inputChangeListeners[bank][pin]:
-                            listener(bank, pin, oldValue, newValue)
+                    if self.bankDir[bank] & (1 << pin):
+                        newValue = allPinValues & (1<<pin)
+                        oldValue = self.lastInputValues[bank][pin]
+                        self.newInputValues[bank][pin] = newValue
+                        if newValue != oldValue:                            
+                            self.inputsChanged = True
+                            self.cond.notify()
+            self.cond.release()
             time.sleep(i2c.IODELAY)
+
+    def doNotifyListeners(self):
+        while True:
+            self.cond.acquire()
+            while not self.inputsChanged:
+                self.cond.wait()            
+            self.inputsChanged = False
+            newValues = copy.deepcopy(self.newInputValues)
+            oldValues = copy.deepcopy(self.lastInputValues)
+            self.lastInputValues = copy.deepcopy(self.newInputValues)
+            self.cond.release()
+            for bank in range (0, 2):
+                for pin in range(0, 8):
+                    if self.bankDir[bank] & (1 << pin):                        
+                        if newValues[bank][pin] != oldValues[bank][pin]:
+                            for listener in self.inputChangeListeners[bank][pin]:
+                                listener(bank, pin, oldValues[bank][pin], newValues[bank][pin])

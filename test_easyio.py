@@ -10,6 +10,8 @@ def onButtonPress(bank, pin, oldValue, newValue):
         buttonPresses = buttonPresses +1
         test_i2c.setAllPins(0, 0)
         test_i2c.setPinValue(0, buttonPresses%3, 1)
+        # Deliberately delay the EDT
+        time.sleep(3)
 
 def testInputListeners(test_i2c):
     test_i2c.addPinInputChangeListener(0, 7, onButtonPress)
