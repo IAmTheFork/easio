@@ -1,28 +1,25 @@
 import easio
 import time
 
-
 buttonPresses = 0
 
-def testInputListeners(test_i2c):
-    test_i2c.addPinInputChangeListener(7, onButtonPress)
-    print("Ready to go!")
-    while True:
-        time.sleep(1)
-
-def onButtonPress(pin, oldValue, newValue):
+def onButtonPress(bank, pin, oldValue, newValue):
     global buttonPresses
     #print("Pin", pin, "changed from", oldValue, "to", newValue)
     if oldValue and not newValue:
         buttonPresses = buttonPresses +1
-        test_i2c.setAllPins(0)
-        test_i2c.setPinValue(buttonPresses%3, 1)
+        test_i2c.setAllPins(0, 0)
+        test_i2c.setPinValue(0, buttonPresses%3, 1)
 
-
+def testInputListeners(test_i2c):
+    test_i2c.addPinInputChangeListener(0, 7, onButtonPress)
+    print("Ready to go!")
+    while True:
+        time.sleep(1)
 
 test_i2c = easio.i2c(0, 0x20)
-test_i2c.setPinMode(7, 1)
-test_i2c.setAllPins(0)
+test_i2c.setPinMode(0, 7, 1)
+test_i2c.setAllPins(0, 0b00000001)
 testInputListeners(test_i2c)
 
 

@@ -6,8 +6,8 @@ import mchouse
 # Set up the I2C GPIO extender using easio
 #########################
 i2c = easio.i2c(0, 0x20)
-i2c.setPinMode(7, 1)
-i2c.setAllPins(0)
+i2c.setPinMode(0, 7, 1)
+i2c.setAllPins(0, 0)
 
 #########################
 # Set up the LED pin positions
@@ -26,7 +26,7 @@ mc.postToChat("Connected")
 # Create a callback for when the physical button's state changes
 # We'll make it build a house when the button is released
 #########################
-def onButtonStateChange(pin, oldValue, newValue):
+def onButtonStateChange(bank, pin, oldValue, newValue):
     if(oldValue and not newValue):
         mchouse.build_a_house(mc)
 
@@ -35,7 +35,7 @@ def onButtonStateChange(pin, oldValue, newValue):
 # This will now listen on a seperate thread to the
 # main thread, allowing us to do other stuff
 #########################
-i2c.addPinInputChangeListener(7, onButtonStateChange)
+i2c.addPinInputChangeListener(0, 7, onButtonStateChange)
 
 #########################
 # Set up a detection loop to detect what the player is standing
@@ -46,24 +46,24 @@ while True:
     block_beneath = mc.getBlock(pos.x, pos.y-1, pos.z)
     #print(block_beneath)
     if block_beneath == 2:
-        i2c.setAllPins(GREEN)
+        i2c.setAllPins(0, GREEN)
     elif block_beneath == 12:
-        i2c.setAllPins(AMBER)
+        i2c.setAllPins(0, AMBER)
     elif block_beneath == 1:
-        i2c.setAllPins(GREEN | RED)
+        i2c.setAllPins(0, GREEN | RED)
     elif block_beneath == 35:
-        i2c.setAllPins(GREEN | AMBER| RED)
+        i2c.setAllPins(0, GREEN | AMBER| RED)
     elif block_beneath == 18:
-        i2c.setAllPins(GREEN)
+        i2c.setAllPins(0, GREEN)
     elif block_beneath == 41:
-        i2c.setAllPins(AMBER)
+        i2c.setAllPins(0, AMBER)
     elif block_beneath == 9:
-        i2c.setAllPins(GREEN)
+        i2c.setAllPins(0, GREEN)
     elif block_beneath == 3:
-        i2c.setAllPins(GREEN | AMBER| RED)
+        i2c.setAllPins(0, GREEN | AMBER| RED)
     elif block_beneath == 79:
-        i2c.setAllPins(RED)
+        i2c.setAllPins(0, RED)
     elif block_beneath == 5:
-        i2c.setAllPins(GREEN | AMBER)
+        i2c.setAllPins(0, GREEN | AMBER)
     else:
-        i2c.setAllPins(0)
+        i2c.setAllPins(0, 0)
